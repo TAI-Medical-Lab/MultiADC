@@ -156,9 +156,9 @@ class DTF(nn.Module):
         return fout
       
 
-class VGADC(nn.Module):
+class MultiADC(nn.Module):
     def __init__(self, device='cpu',compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=2):
-        super(VGADC, self).__init__()
+        super(MultiADC, self).__init__()
         self.compound_dim = compound_dim
         self.protein_dim = protein_dim
         self.n_layers = gt_layers

@@ -118,7 +118,7 @@ class Dim_Reduct_Data:
         return np.hstack((test_data, fused_vector_reduced))
 
 
-class VGADC_Dataset(Dataset):
+class MultiADC_Dataset(Dataset):
 
     def __init__(self, dataset_fold=None):
         self.data = dataset_fold

@@ -28,7 +28,7 @@ from drug_process import smiles_to_graph
 import joblib
 import dgl
 from scipy import sparse as sp
-from model.net import VGADC
+from model.net import MultiADC
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(device)
 def score(y_test, y_pred):
@@ -180,9 +180,9 @@ if __name__ == '__main__':
     linker_g = smiles_to_graph(linker_s)
     adc_g = vitrual_ADC_graph(dar_value)
 
-    model = VGADC_test(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1).to(device)
+    model = MultiADC_test(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1).to(device)
 
-    state_dict = torch.load('VGADC_Model.pth', map_location=device)
+    state_dict = torch.load('MultiADC_Model.pth', map_location=device)
     model.load_state_dict(state_dict['model'])
     model.eval()  
     with torch.no_grad():

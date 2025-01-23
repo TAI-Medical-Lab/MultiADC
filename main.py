@@ -14,8 +14,8 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.metrics import roc_auc_score,confusion_matrix,precision_recall_curve,auc
 # from metrics import *
-from ADCDataset import VGADC_Dataset,Dim_Reduct_Data
-from model.net import VGADC
+from ADCDataset import MultiADC_Dataset,Dim_Reduct_Data
+from model.net import MultiADC
 from loss import DiceLoss,BCEFocalLoss
 from sklearn.utils import resample
 
@@ -203,15 +203,15 @@ if __name__ == '__main__':
         test_fold_processed = pca_processor.transform(test_fold)
         val_fold_processed = pca_processor.transform(val_fold)
 
-        train_set = VGADC_Dataset(train_fold_processed)
-        test_set = VGADC_Dataset(test_fold_processed)
-        val_set = VGADC_Dataset(val_fold_processed)
+        train_set = MultiADC_Dataset(train_fold_processed)
+        test_set = MultiADC_Dataset(test_fold_processed)
+        val_set = MultiADC_Dataset(val_fold_processed)
 
         train_loader = DataLoader(train_set, batch_size=batch, shuffle=False, collate_fn=train_set.collate, drop_last=False)
         test_loader = DataLoader(test_set, batch_size=batch, shuffle=False, collate_fn=test_set.collate, drop_last=False)
         val_loader = DataLoader(val_set, batch_size=batch, shuffle=False, collate_fn=test_set.collate, drop_last=False)
 
-        model = VGADC(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1)
+        model = MultiADC(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1)
         model.to(device)
 
         best_ci =0
