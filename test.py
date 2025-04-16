@@ -101,7 +101,7 @@ def get_esm(sequence, id='sequence'):
     model.eval()  # disables dropout for deterministic results
 
     # Prepare data
-    data = [('protein', sequence)]  # 构造一个包含ID和序列的元组列表
+    data = [('protein', sequence)]  
 
     # Convert the data into a format that can be fed into the model
     batch_labels, batch_strs, batch_tokens = batch_converter(data)
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     linker_g = smiles_to_graph(linker_s)
     adc_g = vitrual_ADC_graph(dar_value)
 
-    model = MultiADC_test(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1).to(device)
+    model = MultiADC(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1).to(device)
 
     state_dict = torch.load('MultiADC_Model.pth', map_location=device)
     model.load_state_dict(state_dict['model'])

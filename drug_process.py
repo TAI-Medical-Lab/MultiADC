@@ -273,7 +273,7 @@ def Compound_graph_construction(compound_values, dir_output):
         compounds_g.append(compound_graph)
         smiles2graph[smiles_data] = compounds_g
         # dgl.save_graphs(dir_output + '/compound_graph/' + str(data) + '.bin', list(compounds_g))
-    with open(dir_output + '/compound_graphs_vn.pkl', 'wb') as f:  # 使用 pickle 将字典对象保存到文件中
+    with open(dir_output + '/compound_graphs_vn.pkl', 'wb') as f:  # 
         pickle.dump(smiles2graph, f)
 
 

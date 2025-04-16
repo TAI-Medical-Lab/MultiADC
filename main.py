@@ -227,7 +227,11 @@ if __name__ == '__main__':
         # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='max', factor=0.9, patience=30, verbose=True, min_lr=1e-5)
         scheduler=optim.lr_scheduler.MultiStepLR(optimizer=optimizer, milestones=[10,20,30], gamma=0.8, last_epoch=-1)
         
-        criterion = BCEFocalLoss(gamma=2, alpha=0.4)
+        # criterion = BCEFocalLoss(gamma=2, alpha=0.4)
+        # criterion = BCELoss(gamma=2, alpha=0.4)
+        criterion = nn.CrossEntropyLoss()
+        # criterion = nn.BCEWithLogitsLoss()
+
         print('Start Training.')
         for epoch in range(epochs):
             train_tp, train_tn, train_fn, train_fp, train_se, train_sp, train_mcc, train_acc, train_auc_roc, train_F1, train_BA, train_prauc, train_PPV, train_NPV,train_train_loss=train(model, device, train_loader, optimizer,criterion)

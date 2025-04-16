@@ -18,7 +18,7 @@ def compound_fingerprint_get( smiles_list):
     for smiles in smiles_list:
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
-            print("无效的 SMILES 字符串")
+            print("Invalid SMILES string")
         else:
             morgan = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
         morgan_list.append(morgan)
@@ -56,7 +56,7 @@ def compound_graph_get( smiles):
     # smiles_TVdataset = self.data[:, 0]
     compounds_graph = []
     # N = len(id_TVdataset)
-    with open('dataset/processed/compound_graphs_vn.pkl', 'rb') as f:  # 使用 pickle 从文件中加载字典对象
+    with open('dataset/processed/compound_graphs_vn.pkl', 'rb') as f:  
         smiles2graph = pickle.load(f)
     for no, smile in enumerate(smiles):
         # print('/'.join(map(str, [no + 1, N])))
