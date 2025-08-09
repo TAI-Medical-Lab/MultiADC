@@ -13,31 +13,30 @@
   <h1 align="center">MultiADC: Advanced Antibody-Drug Conjugate
 Activity Prediction through Multi-scale Feature
 Fusion</h1>
-  <p align="center">
-    Minghui Li , Yang Wu, Zikang Guo, Peijin Guo, Wei Wan, Shengshan Hu , Shengqing Hu, and Xiaoli Lan
-  </p>
 
 </p>
 
-
-
 ### Requirements Before Development
-
-1. Python version: Python 3.9.18
-2. Graphics card support: At least 4GB of cuda memory
-3. Install Python packages:
-
+1. **Python Version**: Python 3.9.18
+2. **Graphics Card Support**: At least 4GB of CUDA memory
+3. **Install Python Packages**:
 ```sh
 pip install -r requirements
 ```
 ### Getting Started Guide
-Dataset storage path: /dataset
-If you need to process your own dataset, please use drug_process.py.
-Start training:
+- **Dataset Storage Path**: `/dataset`
+Generate molecular DGL graphs using `smile_process.py` and ESM embedding features using `protein_process.py`.
+
+If you want to perform data augmentation, you need to execute `augment_process` first.
+
+If you need to modify the model structure, you can make changes in `model/net.py`.
+
+Start your training by running `python main.py`.
+
+- **Start Training**:
 ```sh
 python main.py
 ```
-
  
 
 

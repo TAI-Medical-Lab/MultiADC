@@ -53,8 +53,11 @@ def train(model, device, train_loader, optimizer, criterion):
     sample_num = 0
     total_preds = []
     total_labels = []
+    b=0.25
     for batch_idx, data in enumerate(train_loader):
         heavy, light, antigen, playload_graph, linker_graph, dar, label ,adc_graph,components= data[:]
+        if len(heavy)==1:
+            continue
         heavy = torch.tensor(np.array(heavy)).to(device)
         light = torch.tensor(np.array(light)).to(device)
         antigen = torch.tensor(np.array(antigen)).to(device)
@@ -72,6 +75,17 @@ def train(model, device, train_loader, optimizer, criterion):
         batch_loss = criterion(output, label)
 
         total_loss += batch_loss.item() * label.size(0)
+        # L = criterion(output, label)  
+        # if L > b:
+        #     L_tilde = L  
+        # else:
+        #     L_tilde = 2*b-L  
+        # optimizer.zero_grad()
+        # L_tilde.backward()  #
+        # optimizer.step()
+        
+        # total_loss += L.item() * label.size(0) 
+
         sample_num += label.size(0)
 
         optimizer.zero_grad()
@@ -85,8 +99,9 @@ def train(model, device, train_loader, optimizer, criterion):
         total_labels.extend(label.cpu().numpy())
 
     train_loss = total_loss / sample_num
+    print(train_loss)
     tp, tn, fn, fp, se, sp, mcc, acc, auc_roc_score, F1, BA, prauc, PPV, NPV=score(total_labels, total_preds)
-    # print('traindataset {},{},{},{}'.format(tp, tn, fn, fp))
+    print('traindataset {},{},{},{}'.format(tp, tn, fn, fp))
     return tp, tn, fn, fp, se, sp, mcc, acc, auc_roc_score, F1, BA, prauc, PPV, NPV,train_loss
 
 def test(model, device, test_loader):
@@ -124,30 +139,20 @@ def test(model, device, test_loader):
 
     tp, tn, fn, fp, se, sp, mcc, acc, auc_roc_score, F1, BA, prauc, PPV, NPV = score(total_labels, total_preds)
     test_loss = total_loss / sample_num
+    # print(test_loss)
+    # print('testdataset {},{},{},{}'.format(tp, tn, fn, fp))
     return  test_loss,tp, tn, fn, fp, se, sp, mcc, acc, auc_roc_score, F1, BA, prauc, PPV, NPV
 
 
 
 if __name__ == '__main__':
-    SEED = 10
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
-    # torch.backends.cudnn.deterministic = True
-
-    file_path = 'dataset/processed/'
-    log_file = 'logs/' + str(time.strftime("%m%d-%H%M", time.localtime())) + '.txt'
-    results_file = 'results/' + str(time.strftime("%m%d-%H%M", time.localtime())) + '.txt'
-    os.makedirs('results/', exist_ok=True)
-    os.makedirs('logs/', exist_ok=True)
 
 
-    batch = 64
-    lr=0.00005
+    batch = 128
+    lr=0.00004
     k_fold = 5
     Patience = 30
-    epochs = 300
+    epochs = 100
     se_list = []
     sp_list = []
     mcc_list = []
@@ -159,59 +164,110 @@ if __name__ == '__main__':
     PPV_list = []
     NPV_list = []
 
-    df = pd.read_csv('dataset/dataset.csv')
-    kf = KFold(n_splits=k_fold, shuffle=True, random_state=SEED)
-    pca_processor = Dim_Reduct_Data(n_components=128)
+    # name=
+    SEED = 10
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
+    # torch.backends.cudnn.deterministic = True
 
-    #Standardize and normalize the DAR column
-    dar_data = df.iloc[:, -2].values.reshape(-1, 1)
-    scaler = StandardScaler()
-    dar_data_standardized = scaler.fit_transform(dar_data)
-    dar_data_normalized = normalize(dar_data_standardized, axis=0).flatten()
-    df.iloc[:, -2] = dar_data_normalized
+    file_path = 'dataset/processed/'
+    log_file = 'logs/' + str(time.strftime("%m%d-%H%M", time.localtime())) + '.txt'
+    results_file = 'results/' + str(time.strftime("%m%d-%H%M", time.localtime())) + '.txt'
+ 
+    os.makedirs('results/', exist_ok=True)
+    os.makedirs('logs/', exist_ok=True)
+    # df = pd.read_csv('dataset/dataset.csv')
+    # kf = KFold(n_splits=k_fold, shuffle=True, random_state=SEED)
+    pca_processor = Dim_Reduct_Data(n_components=128)#MLP
 
-    print('Length of dataset:', len(df))
-    i_fold=0
-    for train_index, val_index in kf.split(df):
+    def standardize_dar_column(df):
+        dar_data = df.iloc[:, -2].values.reshape(-1, 1)
+        scaler = StandardScaler()
+        dar_data_standardized = scaler.fit_transform(dar_data)
+        dar_data_normalized = normalize(dar_data_standardized, axis=0).flatten()
+        df.iloc[:, -2] = dar_data_normalized
+        return df
+
+    # df = pd.read_csv('dataset/dataset.csv')
+    # kf = KFold(n_splits=k_fold, shuffle=True, random_state=SEED)
+    # i_fold=0
+    # for train_index, val_index in kf.split(df):
         
-        i_fold += 1
+    #     i_fold += 1
 
-        train_fold = df.iloc[train_index]
-        test_fold = df.iloc[val_index]
-        train_fold, val_fold = train_test_split(train_fold, test_size=30,random_state=SEED)
-        #You can split a validation set to implement an early stopping strategy during training. 
-        #However, due to the limited number of samples, we do not recommend creating a separate validation set. 
-        #If you still choose to split one, we suggest setting the size of the validation set to a relatively small value.
+    #     train_fold = df.iloc[train_index]
+    #     test_fold = df.iloc[val_index]
+    #     train_fold, val_fold = train_test_split(train_fold, test_size=30,random_state=SEED)
+
+
+    for i_fold in range(1, k_fold + 1):
+        print(f"\nFold {i_fold}:")
+
+        train_files = [f"dataset/aug/aug0.5/mix_{j}.csv" for j in range(1, k_fold+1 ) if j != i_fold]
+        # train_files = [f"dataset/aug/aug_{j}.csv" for j in range(1, k_fold+1 ) if j != i_fold]
+        print(train_files)
+
+        train_dfs = [pd.read_csv(f) for f in train_files]
+        train_fold = pd.concat(train_dfs, axis=0, ignore_index=True)
+        # print(train_fold)
+        test_file = f"dataset/aug/part{i_fold}.csv"
+        # test_file = f"dataset/cold_playload/fold{i_fold-1}.csv"
+        print(test_file)
+        test_fold = pd.read_csv(test_file)
+        print(len(train_fold))
+        print(len(test_fold))
+        # 标准化 DAR 列
+        train_fold = standardize_dar_column(train_fold)
+        test_fold = standardize_dar_column(test_fold)
+
+
+        # train_fold, val_fold = train_test_split(train_fold, test_size=30, random_state=SEED)
+        # label_counts = train_fold['label'].value_counts()
+        # if label_counts[0] < label_counts[1]:
+        #     minority = train_fold[train_fold['label'] == 0]
+        #     majority = train_fold[train_fold['label'] == 1]
+        # else:
+        #     minority = train_fold[train_fold['label'] == 1]
+        #     majority = train_fold[train_fold['label'] == 0]
+
+        # minority_upsampled = resample(minority,
+        #                             replace=True,     #
+        #                             n_samples=len(majority),  
+        #                             random_state=42)  
+        # train_fold_upsampled = pd.concat([majority, minority_upsampled], ignore_index=True)
+
         
-        label_counts = train_fold['label'].value_counts()
-        if label_counts[0] < label_counts[1]:
-            minority = train_fold[train_fold['label'] == 0]
-            majority = train_fold[train_fold['label'] == 1]
-        else:
-            minority = train_fold[train_fold['label'] == 1]
-            majority = train_fold[train_fold['label'] == 0]
+        # train_fold_balanced = pd.concat([majority, minority_upsampled])
+        # train_fold_balanced = train_fold_balanced.sample(frac=1, random_state=SEED).reset_index(drop=True)
+        # train_fold_processed = pca_processor.fit_transform(train_fold_balanced)
 
-        # Upsample the minority class.
-        minority_upsampled = resample(minority,
-                                    replace=True,     
-                                    n_samples=len(majority),  
-                                    random_state=SEED)  
-        train_fold_balanced = pd.concat([majority, minority_upsampled])
-        train_fold_balanced = train_fold_balanced.sample(frac=1, random_state=SEED).reset_index(drop=True)
-
-        train_fold_processed = pca_processor.fit_transform(train_fold_balanced)
-        test_fold_processed = pca_processor.transform(test_fold)
-        val_fold_processed = pca_processor.transform(val_fold)
+        train_fold_processed = pca_processor.fit_transform(train_fold)
+        # test_fold_processed = pca_processor.transform(test_fold) 
+        # val_fold_processed = pca_processor.transform(test_fold)
+        test_fold_processed = pca_processor.fit_transform(test_fold)
+        val_fold_processed = pca_processor.fit_transform(test_fold)
 
         train_set = MultiADC_Dataset(train_fold_processed)
         test_set = MultiADC_Dataset(test_fold_processed)
         val_set = MultiADC_Dataset(val_fold_processed)
 
-        train_loader = DataLoader(train_set, batch_size=batch, shuffle=False, collate_fn=train_set.collate, drop_last=False)
-        test_loader = DataLoader(test_set, batch_size=batch, shuffle=False, collate_fn=test_set.collate, drop_last=False)
-        val_loader = DataLoader(val_set, batch_size=batch, shuffle=False, collate_fn=test_set.collate, drop_last=False)
+        train_loader = DataLoader(train_set, batch_size=batch, shuffle=False,
+                                collate_fn=train_set.collate, drop_last=False)
+        test_loader = DataLoader(test_set, batch_size=batch, shuffle=False,
+                                collate_fn=test_set.collate, drop_last=False)
+        val_loader = DataLoader(val_set, batch_size=batch, shuffle=False,
+                                collate_fn=test_set.collate, drop_last=False)
 
-        model = MultiADC(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1)
+
+        print(f"Train size: {len(train_fold_processed)}, "
+            f"Val size: {len(val_fold_processed)}, "
+            f"Test size: {len(test_fold_processed)}")
+        
+        # model = MultiADC(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4, out_dim=1)
+        model = MultiADC(device=device,compound_dim=128, protein_dim=128, gt_layers=3, gt_heads=4)
+
         model.to(device)
 
         best_ci =0
@@ -229,8 +285,8 @@ if __name__ == '__main__':
         
         # criterion = BCEFocalLoss(gamma=2, alpha=0.4)
         # criterion = BCELoss(gamma=2, alpha=0.4)
-        criterion = nn.CrossEntropyLoss()
-        # criterion = nn.BCEWithLogitsLoss()
+        # criterion = nn.CrossEntropyLoss()
+        criterion = nn.BCEWithLogitsLoss()
 
         print('Start Training.')
         for epoch in range(epochs):
@@ -259,10 +315,9 @@ if __name__ == '__main__':
                 with open(log_file, 'a') as f:
                     f.write('MCC improved at epoch ' + str(best_epoch) + ' best_mcc:' + str(round(best_mcc,4)) + '\n')
                 print('MCC improved at epoch ' + str(best_epoch) + ' best_mcc:' + str(round(best_mcc,4)) )
-            else:
-                patience += 1
-
-            if patience == Patience:
+            # else:
+            #     patience += 1
+            # if patience == Patience:
                 # Early stop
                 metric_dict['se'] = test_se
                 metric_dict['sp'] = test_sp
@@ -274,8 +329,9 @@ if __name__ == '__main__':
                 metric_dict['prauc'] = test_prauc
                 metric_dict['PPV'] = test_PPV
                 metric_dict['NPV'] = test_NPV
-                break
-
+                # break
+            else:
+                patience += 1
         #Save the results of the test set for each fold. 
         se_list.append(metric_dict['se'])
         sp_list.append(metric_dict['sp'])

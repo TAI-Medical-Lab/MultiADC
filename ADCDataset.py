@@ -10,7 +10,7 @@ from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from drug_process import laplacian_positional_encoding
+from smile_process import laplacian_positional_encoding
 
 
 def compound_fingerprint_get( smiles_list):
@@ -27,36 +27,49 @@ def compound_fingerprint_get( smiles_list):
 def antigen_get( adcid):
     antigen_list = []
     #ESM-2 Output
-    with open('dataset/Antigen_1280.pkl', 'rb') as f:
+    with open('dataset/protein_1280.pkl', 'rb') as f:
         proteinembs = pickle.load(f)
     for id in adcid:
-        proteinemb = proteinembs[id]
+        proteinemb = proteinembs.get(id.upper(), None)
+        # proteinemb = proteinembs[id]
+        if proteinemb is None:
+            proteinemb=torch.tensor([0.0]*1280)
+        proteinemb=proteinemb.cpu().numpy()
         antigen_list.append(proteinemb)
-    return antigen_list
+    return  np.array(antigen_list)
 
 def heavy_get( adcid):
     heavy_list = []
-    with open('dataset/Heavy_1280.pkl', 'rb') as f:
+    with open('dataset/protein_1280.pkl', 'rb') as f:
         proteinembs = pickle.load(f)
     for id in adcid:
-        proteinemb = proteinembs[id]
+        proteinemb = proteinembs.get(id.upper(), None)
+        if proteinemb is None:
+            proteinemb=torch.tensor([0.0]*1280)
+        proteinemb=  proteinemb.cpu().numpy()
+
+        # proteinemb = proteinembs[id]
         heavy_list.append(proteinemb)
-    return heavy_list
+    return np.array(heavy_list)
 
 def light_get( adcid):
     light_list = []
-    with open('dataset/Light_1280.pkl', 'rb') as f:
+    with open('dataset/protein_1280.pkl', 'rb') as f:
         proteinembs = pickle.load(f)
     for id in adcid:
-        proteinemb = proteinembs[id]
+        proteinemb = proteinembs.get(id.upper(), None)
+        # proteinemb = proteinembs[id]
+        if proteinemb is None:
+            proteinemb=torch.tensor([0.0]*1280)
+        proteinemb=proteinemb.cpu().numpy()
         light_list.append(proteinemb)
-    return light_list
+    return  np.array(light_list)
 
 def compound_graph_get( smiles):
     # smiles_TVdataset = self.data[:, 0]
     compounds_graph = []
     # N = len(id_TVdataset)
-    with open('dataset/processed/compound_graphs_vn.pkl', 'rb') as f:  
+    with open('dataset/processed_aug/compound_graphs_vn.pkl', 'rb') as f:  
         smiles2graph = pickle.load(f)
     for no, smile in enumerate(smiles):
         # print('/'.join(map(str, [no + 1, N])))
@@ -79,23 +92,30 @@ class Dim_Reduct_Data:
         """
         Perform dimensionality reduction on the training set.
         """
-        heavy = heavy_get(train_data['id'])
-        light = light_get(train_data['id'])
-        antigen = antigen_get(train_data['id'])
-        playload = compound_fingerprint_get(train_data['playload'])
+        heavy = heavy_get(train_data['heavy'])
+        light = light_get(train_data['light'])
+        antigen = antigen_get(train_data['antigen'])
+        payload = compound_fingerprint_get(train_data['payload'])
         linker = compound_fingerprint_get(train_data['linker'])
+        # print(type(heavy), heavy.shape if hasattr(heavy, 'shape') else len(heavy))
+        # print(type(light), light.shape if hasattr(light, 'shape') else len(light))
+        # print(type(antigen), antigen.shape if hasattr(antigen, 'shape') else len(antigen))
+        # print(type(payload), payload.shape if hasattr(payload, 'shape') else len(payload))
+        # print(type(linker), linker.shape if hasattr(linker, 'shape') else len(linker))
 
+        
+        # print(type(dar), dar.shape if hasattr(dar, 'shape') else len(dar))
         dar = np.expand_dims(train_data['dar'], axis=1)
+        fused_vector = np.concatenate([heavy, light, antigen, payload, linker, dar], axis=1)
 
-        fused_vector = np.concatenate([heavy, light, antigen, playload, linker, dar], axis=1)
+        # self.scaler = StandardScaler()
+        # fused_vector_scaled = self.scaler.fit_transform(fused_vector)
 
-        self.scaler = StandardScaler()
-        fused_vector_scaled = self.scaler.fit_transform(fused_vector)
+        # self.pca = PCA(n_components=128)
+        # fused_vector_reduced = self.pca.fit_transform(fused_vector_scaled)
 
-        self.pca = PCA(n_components=128)
-        fused_vector_reduced = self.pca.fit_transform(fused_vector_scaled)
-
-        return np.hstack((train_data, fused_vector_reduced))
+        # return np.hstack((train_data, fused_vector_reduced))
+        return np.hstack((train_data, fused_vector))
 
     def transform(self, test_data):
         """
@@ -104,18 +124,22 @@ class Dim_Reduct_Data:
         if self.pca is None or self.scaler is None:
             raise ValueError("PCA model and scaler must be trained on the training data first!")
 
-        heavy = heavy_get(test_data['id'])
-        light = light_get(test_data['id'])
-        antigen = antigen_get(test_data['id'])
-        playload = compound_fingerprint_get(test_data['playload'])
+        heavy = heavy_get(test_data['heavy'])
+        light = light_get(test_data['light'])
+        antigen = antigen_get(test_data['antigen'])
+        payload = compound_fingerprint_get(test_data['payload'])
         linker = compound_fingerprint_get(test_data['linker'])
         dar = np.expand_dims(test_data['dar'], axis=1)
-        fused_vector = np.concatenate([heavy, light, antigen, playload, linker, dar], axis=1)
 
-        fused_vector_scaled = self.scaler.transform(fused_vector)
-        fused_vector_reduced = self.pca.transform(fused_vector_scaled)
 
-        return np.hstack((test_data, fused_vector_reduced))
+        fused_vector = np.concatenate([heavy, light, antigen, payload, linker, dar], axis=1)
+
+        # fused_vector_scaled = self.scaler.transform(fused_vector)
+        # fused_vector_reduced = self.pca.transform(fused_vector_scaled)
+
+        # return np.hstack((test_data, fused_vector_reduced))
+        return np.hstack((test_data, fused_vector))
+
 
 
 class MultiADC_Dataset(Dataset):
@@ -124,11 +148,11 @@ class MultiADC_Dataset(Dataset):
         self.data = dataset_fold
         # print(np.array(self.data[0]).shape)
         self.adcid = self.data[:, 0]
-        self.playload = compound_graph_get(self.data[:, 4])
+        self.payload = compound_graph_get(self.data[:, 4])
         self.linker = compound_graph_get(self.data[:, 5])
-        self.heavy = heavy_get(self.adcid)
-        self.light = light_get(self.adcid)
-        self.antigen = antigen_get(self.adcid)
+        self.heavy = heavy_get(self.data[:, 1])
+        self.light = light_get(self.data[:, 2])
+        self.antigen = antigen_get(self.data[:, 3])
         self.dar = self.data[:, 6]
         self.label = self.data[:,7]
         self.adc = self.Vitrual_ADC_graph(self.adcid, self.dar)
@@ -144,7 +168,7 @@ class MultiADC_Dataset(Dataset):
             self.heavy[idx],
             self.light[idx],
             self.antigen[idx],
-            self.playload[idx],
+            self.payload[idx],
             self.linker[idx],
             self.dar[idx],
             self.label[idx],
@@ -181,16 +205,16 @@ class MultiADC_Dataset(Dataset):
         return adc_graph
 
     def collate(self, sample):
-        heavy, light, antigen, playload, linker, dar, label, adc, fused_vector_reduced = map(list, zip(*sample))
+        heavy, light, antigen, payload, linker, dar, label, adc, fused_vector_reduced = map(list, zip(*sample))
         adc_graphs = dgl.batch(adc)
-        playload_graphs= dgl.batch(playload)
+        payload_graphs= dgl.batch(payload)
         linker_graphs= dgl.batch(linker)
         # dar = np.array(dar)
         dar = torch.FloatTensor(dar)
         # label = torch.LongTensor(label)
         label = torch.FloatTensor(label)#bce
         fused_vector_reduced = torch.FloatTensor(fused_vector_reduced)
-        return heavy, light, antigen, playload_graphs, linker_graphs, dar, label, adc_graphs, fused_vector_reduced
+        return heavy, light, antigen, payload_graphs, linker_graphs, dar, label, adc_graphs, fused_vector_reduced
 
 
 
